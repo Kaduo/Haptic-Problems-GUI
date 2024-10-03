@@ -1,9 +1,7 @@
 from enum import Enum
 import random
 from math import gcd, lcm
-from tkinter import Tk, Label, StringVar, N, S, W, E
-from tkinter import ttk
-from tkinter import font
+from tkinter import Tk, Label, StringVar, N, S, W, E, ttk
 from math import sqrt
 
 NB_REGLETTES = 10
@@ -138,12 +136,12 @@ class RodSpec:
         # rods of length l.
         # If both are set, the numbers are added together.
         self.nb_rods_per_length = nb_rods_per_length
-        for l in range(MIN_LENGTH, MAX_LENGTH + 1):
-            if l in d.keys():
-                self.nb_rods_per_length[l - 1] = d[l]
+        for length in range(MIN_LENGTH, MAX_LENGTH + 1):
+            if length in d.keys():
+                self.nb_rods_per_length[length - 1] = d[length]
 
-    def nb_of_length(self, l):
-        return self.nb_rods_per_length[l - 1]
+    def nb_of_length(self, length):
+        return self.nb_rods_per_length[length - 1]
 
     def add_rods(self, length, number=1):
         self.nb_rods_per_length[length - 1] += number
@@ -173,12 +171,11 @@ class RodSpec:
         unit_rod_width=UNIT_ROD_WIDTH,
     ):
         line_width = self.line_width()
-        pad_xs = []
         pad_y = 0
 
         rod_lengths = []
-        for l in range(1, MAX_LENGTH+1):
-            rod_lengths += [l]*self.nb_rods_per_length[l-1]
+        for length in range(1, MAX_LENGTH+1):
+            rod_lengths += [length]*self.nb_rods_per_length[length-1]
 
         random.shuffle(rod_lengths)
         rod_lines = [[]]
@@ -186,8 +183,8 @@ class RodSpec:
         with open(filename, "w") as f:
             x = 0
             f.write(f"{self.nb_rods()} ")
-            for l in rod_lengths:
-                if l + x > line_width:
+            for length in rod_lengths:
+                if length + x > line_width:
                     pad_x = (screen_width - x)/len(rod_lines[-1])
 
                     for j, rod in enumerate(rod_lines[-1]):
@@ -198,8 +195,8 @@ class RodSpec:
                     rod_lines.append([])
 
 
-                rod_lines[-1].append([l, x])
-                x += unit_rod_width * l
+                rod_lines[-1].append([length, x])
+                x += unit_rod_width * length
 
             #Pad the last line
             pad_x = (screen_width - x)/len(rod_lines[-1])
@@ -215,8 +212,8 @@ class RodSpec:
             pad_y = (screen_height - (len(rod_lines)*unit_rod_width))/len(rod_lines)
             
             for line_idx, line in enumerate(rod_lines):
-                for [l, x] in line:
-                    f.write(f"{l} {x} {pad_y*(line_idx + random.uniform(0.2,0.8)) + line_idx*unit_rod_width} ")
+                for [length, x] in line:
+                    f.write(f"{length} {x} {pad_y*(line_idx + random.uniform(0.2,0.8)) + line_idx*unit_rod_width} ")
 
             f.close()
 
@@ -247,6 +244,27 @@ class Problem:
 
     def is_solution(self, answer):
         return self.solution == answer
+    
+    def save(self, name="problem"):
+        with open(name+".prob", "w") as f:
+            f.write(f"{self.l1} ")
+            f.write(f"{self.r1.length} ")
+            f.write(f"{self.r2.length}")
+            f.close()
+        self.necessary_rods.save(name+".rods")
+    
+    def load(filename):
+        with open(filename, "r") as f:
+            args = f.read().split(" ")
+            print(args)
+            l1 = int(args[0])
+            r1 = Rod(int(args[1]))
+            r2 = Rod(int(args[2]))
+            f.close()
+            return Problem(l1, r1, r2)
+
+def make_problems(n):
+    pass
 
 if __name__ == "__main__":
 
@@ -259,9 +277,11 @@ if __name__ == "__main__":
         except ParsingError:
             pass
 
-    problem = Problem.random()
-    problem.necessary_rods.pad(30)
-    problem.necessary_rods.save()
+    # problem = Problem.random()
+    # problem.necessary_rods.pad(20)
+    # problem.save()
+
+    problem = Problem.load("problem.prob")
 
     root = Tk()
     root.attributes("-fullscreen", True)
@@ -276,18 +296,9 @@ if __name__ == "__main__":
     mainframe.rowconfigure(1, weight=1)
     mainframe.rowconfigure(2, weight=1)
 
-    # problem_statement = Text(mainframe, height=1)
-    # problem_statement.insert("end", "hello")
-    # problem_statement.insert("end", " world")
-    # problem_statement.configure(state="disabled")
-    # problem_statement.grid(column=4, row=4)
-
-    # problem_font = font.nametofont("TkDefaultFont")
-    # problem_font["size"] = 50
-
     problem_frame = ttk.Frame(mainframe)
     problem_frame.grid(column=1, row=1, sticky=S)
-    Label(problem_frame, text=f"Si la réglette ").grid(column=1, row=1, sticky=S)
+    Label(problem_frame, text="Si la réglette ").grid(column=1, row=1, sticky=S)
     Label(
         problem_frame, text=f"{problem.r1.color} ", foreground=problem.r1.color.value
     ).grid(column=2, row=1, sticky=(S, W))
@@ -298,16 +309,12 @@ if __name__ == "__main__":
     Label(
         problem_frame, text=f"{problem.r2.color} ", foreground=problem.r2.color.value
     ).grid(column=4, row=1, sticky=(S, W))
-    Label(problem_frame, text=f"?").grid(column=5, row=1, sticky=(S, W))
-
-    # ttk.Label(mainframe, text=str(problem)).grid(column=1, row=1, sticky=(S, E))
+    Label(problem_frame, text="?").grid(column=5, row=1, sticky=(S, W))
 
     answer = StringVar()
     answer_entry = ttk.Entry(mainframe, textvariable=answer)
     answer_entry.grid(column=1, row=2, sticky=N)
     answer_entry.focus()
-
-    # ttk.Label(mainframe, text="cm").grid(column = 2, row = 2, sticky = E)
 
     root.bind("<Return>", submit_answer)
 

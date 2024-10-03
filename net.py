@@ -1,4 +1,3 @@
-import fabric
 from fabric import Connection
 
 tablet_ip = "192.168.1.7"
