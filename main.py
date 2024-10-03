@@ -1,7 +1,7 @@
 from enum import Enum
 import random
 from math import gcd, lcm
-from tkinter import *
+from tkinter import Tk, Label, StringVar, N, S, W, E
 from tkinter import ttk
 from tkinter import font
 from math import sqrt
@@ -248,7 +248,6 @@ class Problem:
     def is_solution(self, answer):
         return self.solution == answer
 
-
 if __name__ == "__main__":
 
     def submit_answer(*args):
@@ -265,6 +264,7 @@ if __name__ == "__main__":
     problem.necessary_rods.save()
 
     root = Tk()
+    root.attributes("-fullscreen", True)
     root.title("Haptic Rods")
 
     mainframe = ttk.Frame(root, padding=(3, 3, 12, 12))
