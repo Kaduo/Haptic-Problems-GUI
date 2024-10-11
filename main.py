@@ -1,7 +1,7 @@
 from enum import Enum
 import random
 from math import gcd, lcm
-from tkinter import *
+from tkinter import Label, StringVar, S, N, W, E, Tk
 from tkinter import ttk
 from tkinter import font
 from math import sqrt
@@ -173,7 +173,6 @@ class RodSpec:
         unit_rod_width=UNIT_ROD_WIDTH,
     ):
         line_width = self.line_width()
-        pad_xs = []
         pad_y = 0
 
         rod_lengths = []
