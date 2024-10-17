@@ -1,2 +1,6 @@
 /.venv
 /__pycache__
+gaze/__pycache__/AngleBuffer.cpython-312.pyc
+*.csv
+*.prob
+*.rods

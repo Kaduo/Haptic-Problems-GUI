@@ -1,17 +1,27 @@
 from enum import Enum
 import random
 from math import gcd, lcm
-from tkinter import Tk, Label, StringVar, N, S, W, E, ttk
+import tkinter as tkc
+from tkinter import Tk, Label, StringVar, N, S, W, E, ttk, END
 from math import sqrt
+import os
+from fabric import Connection
+from subprocess import Popen
+
+SIGINT = 2
 
 NB_REGLETTES = 10
 MIN_LENGTH = 1
 MAX_LENGTH = 10
 
-TABLET_WIDTH = 1600
+TABLET_WIDTH = 1000
 TABLET_HEIGHT = 600
 
 UNIT_ROD_WIDTH = 40
+
+TABLET_IP = "192.168.1.7"
+USER = "pi"
+PASSWORD = "raspberry"
 
 
 class Color(Enum):
@@ -51,7 +61,6 @@ class Color(Enum):
 
 
 class Rod:
-
     def __init__(self, length):
         self.length = length
         self.color = list(Color)[self.length - 1]
@@ -62,7 +71,6 @@ class ParsingError(Exception):
 
 
 class Fraction:
-
     def __init__(self, numerator, denominator, reduce=False):
         self.numerator = numerator
         self.denominator = denominator
@@ -128,7 +136,6 @@ def random_rod(min_length=MIN_LENGTH, max_length=MAX_LENGTH):
 
 
 class RodSpec:
-
     def __init__(self, nb_rods_per_length=[0] * 10, d={}):
         # nb_rods_per_length is a list where the n-th element is the
         # number of rods of length n+1.
@@ -174,8 +181,8 @@ class RodSpec:
         pad_y = 0
 
         rod_lengths = []
-        for length in range(1, MAX_LENGTH+1):
-            rod_lengths += [length]*self.nb_rods_per_length[length-1]
+        for length in range(1, MAX_LENGTH + 1):
+            rod_lengths += [length] * self.nb_rods_per_length[length - 1]
 
         random.shuffle(rod_lengths)
         rod_lines = [[]]
@@ -185,47 +192,47 @@ class RodSpec:
             f.write(f"{self.nb_rods()} ")
             for length in rod_lengths:
                 if length + x > line_width:
-                    pad_x = (screen_width - x)/len(rod_lines[-1])
+                    pad_x = (screen_width - x) / len(rod_lines[-1])
 
                     for j, rod in enumerate(rod_lines[-1]):
-                        rod[1] += (j+random.uniform(0.2,0.8))*pad_x # pad x
-
+                        rod[1] += (j + random.uniform(0.2, 0.8)) * pad_x  # pad x
 
                     x = 0
                     rod_lines.append([])
 
-
                 rod_lines[-1].append([length, x])
                 x += unit_rod_width * length
 
-            #Pad the last line
-            pad_x = (screen_width - x)/len(rod_lines[-1])
+            # Pad the last line
+            pad_x = (screen_width - x) / len(rod_lines[-1])
 
             for j, rod in enumerate(rod_lines[-1]):
-                rod[1] += (j+random.uniform(0.2,0.8))*pad_x
+                rod[1] += (j + random.uniform(0.2, 0.8)) * pad_x
 
-            #Move the last line around
+            # Move the last line around
             rand_idx = random.randrange(0, len(rod_lines))
             rod_lines[-1], rod_lines[rand_idx] = rod_lines[rand_idx], rod_lines[-1]
 
+            pad_y = (screen_height - (len(rod_lines) * unit_rod_width)) / len(rod_lines)
 
-            pad_y = (screen_height - (len(rod_lines)*unit_rod_width))/len(rod_lines)
-            
             for line_idx, line in enumerate(rod_lines):
                 for [length, x] in line:
-                    f.write(f"{length} {x} {pad_y*(line_idx + random.uniform(0.2,0.8)) + line_idx*unit_rod_width} ")
+                    f.write(
+                        f"{length} {x} {pad_y*(line_idx + random.uniform(0.2,0.8)) + line_idx*unit_rod_width} "
+                    )
 
             f.close()
 
-class Problem:
 
-    def __init__(self, l1, r1, r2):
+class Problem:
+    def __init__(self, l1, r1, r2, padding=20):
         self.l1 = l1
         self.r1 = r1
         self.r2 = r2
         self.solution = Fraction((r2.length * l1), r1.length, reduce=True)
 
         lcm_r1_r2 = lcm(r1.length, r2.length)
+        print("lcm ", lcm_r1_r2)
         gcd_r1_r2 = gcd(r1.length, r2.length)
         self.necessary_rods = RodSpec(
             d={
@@ -235,24 +242,26 @@ class Problem:
             }
         )
 
-    def random():
+        self.necessary_rods.pad(padding)
+
+    def random(padding= 20):
         # TODO : prevent second random rod to be the same as the first one
-        return Problem(random.randrange(1, 11), random_rod(min_length=2), random_rod())
+        return Problem(random.randrange(1, 11), random_rod(min_length=2), random_rod(), padding=padding)
 
     def __str__(self):
         return f"Si la réglette {self.r1.color} mesure {self.l1} cm, combien mesure la réglette {self.r2.color} ?"
 
     def is_solution(self, answer):
         return self.solution == answer
-    
+
     def save(self, name="problem"):
-        with open(name+".prob", "w") as f:
+        with open(name + ".prob", "w") as f:
             f.write(f"{self.l1} ")
             f.write(f"{self.r1.length} ")
             f.write(f"{self.r2.length}")
             f.close()
-        self.necessary_rods.save(name+".rods")
-    
+        self.necessary_rods.save(name + ".rods")
+
     def load(filename):
         with open(filename, "r") as f:
             args = f.read().split(" ")
@@ -263,59 +272,96 @@ class Problem:
             f.close()
             return Problem(l1, r1, r2)
 
+
 def make_problems(n):
     pass
 
-if __name__ == "__main__":
 
-    def submit_answer(*args):
+class App:
+    def __init__(self):
 
+        self.c = Connection(TABLET_IP, user=USER, connect_kwargs={"password": PASSWORD})
+
+
+        self.problem = Problem.load("problem.prob")
+        self.root = Tk()
+        #self.root.attributes("-fullscreen", True)
+        self.root.title("Haptic Rods")
+
+        self.mainframe = ttk.Frame(self.root, padding=(3, 3, 12, 12))
+        self.mainframe.grid(column=0, row=0, sticky=(N, W, E, S))
+        self.root.columnconfigure(0, weight=1)
+        self.root.rowconfigure(0, weight=1)
+
+        self.mainframe.columnconfigure(1, weight=1)
+        self.mainframe.rowconfigure(1, weight=1)
+        self.mainframe.rowconfigure(2, weight=1)
+
+        self.problem_frame = ttk.Frame(self.mainframe)
+        self.problem_frame.grid(column=1, row=1, sticky=S)
+        self.answer = StringVar()
+        self.answer_entry = ttk.Entry(self.mainframe, textvariable=self.answer)
+        self.answer_entry.grid(column=1, row=2, sticky=N)
+        self.answer_entry.focus()
+
+        self.root.bind("<Return>", self.submit_answer)
+
+    def submit_answer(self, *args):
         try:
-            value = Fraction.from_string(answer.get())
-            print(problem.is_solution(value))
-
+            value = Fraction.from_string(self.answer.get())
+            if self.problem.is_solution(value):
+                self.root.configure(bg="green")
+            else:
+                self.root.configure(bg="red")
         except ParsingError:
-            pass
+            self.root.configure(bg="red")
+        
+        # self.problem = Problem.random()
+        self.display_problem(self.problem)
 
-    # problem = Problem.random()
-    # problem.necessary_rods.pad(20)
-    # problem.save()
+    def mainloop(self):
+        self.root.mainloop()
 
-    problem = Problem.load("problem.prob")
+    def display_problem(self, problem):
+        for widget in self.problem_frame.winfo_children():
+            widget.destroy()
+        # self.answer_entry.delete("1.0", END)
+        Label(self.problem_frame, text="Si la réglette ").grid(
+            column=1, row=1, sticky=S
+        )
 
-    root = Tk()
-    root.attributes("-fullscreen", True)
-    root.title("Haptic Rods")
+        Label(
+            self.problem_frame,
+            text=f"{problem.r1.color} ",
+            foreground=problem.r1.color.value,
+        ).grid(column=2, row=1, sticky=(S, W))
 
-    mainframe = ttk.Frame(root, padding=(3, 3, 12, 12))
-    mainframe.grid(column=0, row=0, sticky=(N, W, E, S))
-    root.columnconfigure(0, weight=1)
-    root.rowconfigure(0, weight=1)
+        Label(
+            self.problem_frame,
+            text=f"mesure {problem.l1} cm, quelle est la longueur de la réglette ",
+        ).grid(column=3, row=1, sticky=(S, W))
 
-    mainframe.columnconfigure(1, weight=1)
-    mainframe.rowconfigure(1, weight=1)
-    mainframe.rowconfigure(2, weight=1)
+        Label(
+            self.problem_frame,
+            text=f"{problem.r2.color} ",
+            foreground=problem.r2.color.value,
+        ).grid(column=4, row=1, sticky=(S, W))
 
-    problem_frame = ttk.Frame(mainframe)
-    problem_frame.grid(column=1, row=1, sticky=S)
-    Label(problem_frame, text="Si la réglette ").grid(column=1, row=1, sticky=S)
-    Label(
-        problem_frame, text=f"{problem.r1.color} ", foreground=problem.r1.color.value
-    ).grid(column=2, row=1, sticky=(S, W))
-    Label(
-        problem_frame,
-        text=f"mesure {problem.l1} cm, quelle est la longueur de la réglette ",
-    ).grid(column=3, row=1, sticky=(S, W))
-    Label(
-        problem_frame, text=f"{problem.r2.color} ", foreground=problem.r2.color.value
-    ).grid(column=4, row=1, sticky=(S, W))
-    Label(problem_frame, text="?").grid(column=5, row=1, sticky=(S, W))
+        Label(self.problem_frame, text="?").grid(column=5, row=1, sticky=(S, W))
 
-    answer = StringVar()
-    answer_entry = ttk.Entry(mainframe, textvariable=answer)
-    answer_entry.grid(column=1, row=2, sticky=N)
-    answer_entry.focus()
+        self.c.run("DISPLAY=:0 xdotool getactivewindow key Escape")
+        self.c.run("DISPLAY=:0 cd ~/haptic_rods_C && make run", asynchronous=True)
 
-    root.bind("<Return>", submit_answer)
+if __name__ == "__main__":
+    p = Problem.random()
+    p.save()
+    os.system("scp '/home/aflokkat/Bureau/HapticRods/Haptic-Problems-GUI/problem.rods' pi@192.168.1.7:~/haptic_rods_C/spec.rods")
+    p = Popen(["python", "gaze/main.py"]) # something long running
+    # ... do other stuff while subprocess is running
 
-    root.mainloop()
+
+    app = App()
+    app.mainloop()
+    print("hi (:")
+    p.send_signal(SIGINT)
+    print("oupt")

@@ -7,11 +7,13 @@ password = "raspberry"
 def send_key(c, k):
     c.run(f"DISPLAY=:0 xdotool getactive window key {k}")
 
-c = Connection(tablet_ip, user=user, connect_kwargs={"password": password})
+if __name__ == "__main__":
 
-try:
-    c.run("cd ~/haptic_rods_C/ && make update_and_run")
-finally:
-    print("hi")
-    c.run("DISPLAY=:0 xdotool getactivewindow key Escape")
-    c.close()
+    c = Connection(tablet_ip, user=user, connect_kwargs={"password": password})
+
+    try:
+        c.run("cd ~/haptic_rods_C/ && make update_and_run")
+    finally:
+        print("hi")
+        c.run("DISPLAY=:0 xdotool getactivewindow key Escape")
+        c.close()
