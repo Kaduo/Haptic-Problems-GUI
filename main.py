@@ -1,12 +1,12 @@
 from enum import Enum
 import random
 from math import gcd, lcm
-import tkinter as tkc
-from tkinter import Tk, Label, StringVar, N, S, W, E, ttk, END
+from tkinter import Tk, Label, StringVar, N, S, W, E, ttk
 from math import sqrt
 import os
 from fabric import Connection
 from subprocess import Popen
+from net import tablet_ip
 
 SIGINT = 2
 
@@ -162,8 +162,6 @@ class RodSpec:
 
     def pad(self, total_rods=20):
         if self.nb_rods() < total_rods:
-            print(total_rods)
-            print(self.nb_rods())
             diff = total_rods - self.nb_rods()
             for _ in range(diff):
                 self.nb_rods_per_length[
@@ -232,7 +230,6 @@ class Problem:
         self.solution = Fraction((r2.length * l1), r1.length, reduce=True)
 
         lcm_r1_r2 = lcm(r1.length, r2.length)
-        print("lcm ", lcm_r1_r2)
         gcd_r1_r2 = gcd(r1.length, r2.length)
         self.necessary_rods = RodSpec(
             d={
@@ -265,7 +262,6 @@ class Problem:
     def load(filename):
         with open(filename, "r") as f:
             args = f.read().split(" ")
-            print(args)
             l1 = int(args[0])
             r1 = Rod(int(args[1]))
             r2 = Rod(int(args[2]))
@@ -282,8 +278,8 @@ class App:
 
         self.c = Connection(TABLET_IP, user=USER, connect_kwargs={"password": PASSWORD})
 
-
-        self.problem = Problem.load("problem.prob")
+        self.problem_id = 0
+        self.problem = Problem.load("problem0.prob")
         self.root = Tk()
         #self.root.attributes("-fullscreen", True)
         self.root.title("Haptic Rods")
@@ -317,6 +313,7 @@ class App:
             self.root.configure(bg="red")
         
         # self.problem = Problem.random()
+        self.problem_id += 1
         self.display_problem(self.problem)
 
     def mainloop(self):
@@ -353,9 +350,7 @@ class App:
         self.c.run("DISPLAY=:0 cd ~/haptic_rods_C && make run", asynchronous=True)
 
 if __name__ == "__main__":
-    p = Problem.random()
-    p.save()
-    os.system("scp '/home/aflokkat/Bureau/HapticRods/Haptic-Problems-GUI/problem.rods' pi@192.168.1.7:~/haptic_rods_C/spec.rods")
+    os.system(f"scp '/home/aflokkat/Bureau/HapticRods/Haptic-Problems-GUI/problem.rods' pi@{tablet_ip}:~/haptic_rods_C/spec.rods")
     p = Popen(["python", "gaze/main.py"]) # something long running
     # ... do other stuff while subprocess is running
 
