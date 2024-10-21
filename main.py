@@ -323,6 +323,7 @@ class App:
         # self.problem = Problem.random()
         self.problem_id += 1
         self.problem = Problem.load("problem{problem_id}.prob")
+        send_key(self.c, "Escape")
         send_key(self.c, "n")
 
     def mainloop(self):
@@ -359,7 +360,7 @@ class App:
         self.c.run("DISPLAY=:0 cd ~/haptic_rods_C && make run", asynchronous=True)
 
 if __name__ == "__main__":
-    os.system(f"scp -r '/home/aflokkat/Bureau/HapticRods/Haptic-Problems-GUI/problem_set' pi@{TABLET_IP}:~/haptic_rods_C/problem_set")
+    # os.system(f"scp -r '/home/aflokkat/Bureau/HapticRods/Haptic-Problems-GUI/problem_set' pi@{TABLET_IP}:~/haptic_rods_C/problem_set")
     p = Popen(["python", "gaze/main.py"])
 
     app = App()

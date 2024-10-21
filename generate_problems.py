@@ -1,6 +1,6 @@
 from main import Problem
 import os
-from net import tablet_ip
+from main import TABLET_IP
 
 def generate_problems(n, prefix="problem_set/problem"):
     for i in range(n):
@@ -8,7 +8,7 @@ def generate_problems(n, prefix="problem_set/problem"):
         p.save(prefix+str(i))
 
 def send_problems():
-    os.system(f"scp -r '/home/aflokkat/Bureau/HapticRods/Haptic-Problems-GUI/problem_set' pi@{tablet_ip}:~/haptic_rods_C/problem_set")
+    os.system(f"scp -r 'problem_set' pi@{TABLET_IP}:~/haptic_rods_C/problem_set")
 
 if __name__ == "__main__":
     generate_problems(20)
