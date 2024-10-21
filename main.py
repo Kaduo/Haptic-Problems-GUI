@@ -4,9 +4,13 @@ from math import gcd, lcm
 from tkinter import Tk, Label, StringVar, N, S, W, E, ttk
 from math import sqrt
 import os
-from fabric import Connection
 from subprocess import Popen
-from net import tablet_ip
+from fabric import Connection
+
+TABLET_IP = "192.168.1.9"
+USER = "pi"
+PASSWORD = "raspberry"
+
 
 SIGINT = 2
 
@@ -19,9 +23,12 @@ TABLET_HEIGHT = 600
 
 UNIT_ROD_WIDTH = 40
 
-TABLET_IP = "192.168.1.7"
 USER = "pi"
 PASSWORD = "raspberry"
+
+
+def send_key(c, k):
+    c.run(f"DISPLAY=:0 xdotool getactive window key {k}")
 
 
 class Color(Enum):
@@ -279,7 +286,7 @@ class App:
         self.c = Connection(TABLET_IP, user=USER, connect_kwargs={"password": PASSWORD})
 
         self.problem_id = 0
-        self.problem = Problem.load("problem0.prob")
+        self.problem = Problem.load("problem{problem_id}.prob")
         self.root = Tk()
         #self.root.attributes("-fullscreen", True)
         self.root.title("Haptic Rods")
@@ -300,6 +307,7 @@ class App:
         self.answer_entry.grid(column=1, row=2, sticky=N)
         self.answer_entry.focus()
 
+        self.display_problem(self.problem)
         self.root.bind("<Return>", self.submit_answer)
 
     def submit_answer(self, *args):
@@ -314,7 +322,8 @@ class App:
         
         # self.problem = Problem.random()
         self.problem_id += 1
-        self.display_problem(self.problem)
+        self.problem = Problem.load("problem{problem_id}.prob")
+        send_key(self.c, "n")
 
     def mainloop(self):
         self.root.mainloop()
@@ -350,13 +359,9 @@ class App:
         self.c.run("DISPLAY=:0 cd ~/haptic_rods_C && make run", asynchronous=True)
 
 if __name__ == "__main__":
-    os.system(f"scp '/home/aflokkat/Bureau/HapticRods/Haptic-Problems-GUI/problem.rods' pi@{tablet_ip}:~/haptic_rods_C/spec.rods")
-    p = Popen(["python", "gaze/main.py"]) # something long running
-    # ... do other stuff while subprocess is running
-
+    os.system(f"scp -r '/home/aflokkat/Bureau/HapticRods/Haptic-Problems-GUI/problem_set' pi@{TABLET_IP}:~/haptic_rods_C/problem_set")
+    p = Popen(["python", "gaze/main.py"])
 
     app = App()
     app.mainloop()
-    print("hi (:")
     p.send_signal(SIGINT)
-    print("oupt")
