@@ -28,7 +28,7 @@ PASSWORD = "raspberry"
 
 
 def send_key(c, k):
-    c.run(f"DISPLAY=:0 xdotool getactive window key {k}")
+    c.run(f"DISPLAY=:0 xdotool getactivewindow key {k}")
 
 
 class Color(Enum):
@@ -165,7 +165,7 @@ class RodSpec:
 
     def line_width(self):
         area = sum([self.nb_rods_per_length[i] * (i + 1) for i in range(NB_REGLETTES)])
-        return sqrt(8 * area / 3) * UNIT_ROD_WIDTH  # 8/3 is the tablet's aspect ratio
+        return sqrt(5 * area / 3) * UNIT_ROD_WIDTH  # 5/3 is the tablet's aspect ratio
 
     def pad(self, total_rods=20):
         if self.nb_rods() < total_rods:
@@ -201,7 +201,6 @@ class RodSpec:
 
                     for j, rod in enumerate(rod_lines[-1]):
                         rod[1] += (j + random.uniform(0.2, 0.8)) * pad_x  # pad x
-
                     x = 0
                     rod_lines.append([])
 
@@ -286,7 +285,7 @@ class App:
         self.c = Connection(TABLET_IP, user=USER, connect_kwargs={"password": PASSWORD})
 
         self.problem_id = 0
-        self.problem = Problem.load("problem{problem_id}.prob")
+        self.problem = Problem.load(f"problem_set/problem{self.problem_id}.prob")
         self.root = Tk()
         #self.root.attributes("-fullscreen", True)
         self.root.title("Haptic Rods")
@@ -320,11 +319,12 @@ class App:
         except ParsingError:
             self.root.configure(bg="red")
         
-        # self.problem = Problem.random()
         self.problem_id += 1
-        self.problem = Problem.load("problem{problem_id}.prob")
-        send_key(self.c, "Escape")
+        self.problem = Problem.load(f"problem_set/problem{self.problem_id}.prob")
+        print("ho")
         send_key(self.c, "n")
+        print("hi")
+        self.display_problem(self.problem)
 
     def mainloop(self):
         self.root.mainloop()
@@ -356,8 +356,8 @@ class App:
 
         Label(self.problem_frame, text="?").grid(column=5, row=1, sticky=(S, W))
 
-        self.c.run("DISPLAY=:0 xdotool getactivewindow key Escape")
-        self.c.run("DISPLAY=:0 cd ~/haptic_rods_C && make run", asynchronous=True)
+        if self.problem_id == 0:
+            self.c.run("DISPLAY=:0 cd ~/haptic_rods_C && make update_and_run", asynchronous=True)
 
 if __name__ == "__main__":
     # os.system(f"scp -r '/home/aflokkat/Bureau/HapticRods/Haptic-Problems-GUI/problem_set' pi@{TABLET_IP}:~/haptic_rods_C/problem_set")
@@ -365,4 +365,8 @@ if __name__ == "__main__":
 
     app = App()
     app.mainloop()
+    send_key(app.c, "Escape")
+    # app.c.run("pkill haptic_rods")
+    # print("hello...")
+
     p.send_signal(SIGINT)
