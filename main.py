@@ -321,9 +321,6 @@ class App:
         
         self.problem_id += 1
         self.problem = Problem.load(f"problem_set/problem{self.problem_id}.prob")
-        print("ho")
-        send_key(self.c, "n")
-        print("hi")
         self.display_problem(self.problem)
 
     def mainloop(self):
@@ -358,6 +355,8 @@ class App:
 
         if self.problem_id == 0:
             self.c.run("DISPLAY=:0 cd ~/haptic_rods_C && make update_and_run", asynchronous=True)
+        else:
+            send_key(self.c, "N")
 
 if __name__ == "__main__":
     # os.system(f"scp -r '/home/aflokkat/Bureau/HapticRods/Haptic-Problems-GUI/problem_set' pi@{TABLET_IP}:~/haptic_rods_C/problem_set")
