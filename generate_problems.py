@@ -8,8 +8,8 @@ def generate_problems(n, prefix="problem_set/problem"):
         p.save(prefix+str(i))
 
 def send_problems():
-    os.system(f"scp -r 'problem_set' pi@{TABLET_IP}:~/haptic_rods_C/problem_set")
+    os.system(f"scp -r 'problem_set' pi@{TABLET_IP}:~/haptic_rods_C/")
 
 if __name__ == "__main__":
-    generate_problems(20)
+    generate_problems(30)
     send_problems()

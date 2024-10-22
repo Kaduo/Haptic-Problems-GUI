@@ -6,6 +6,8 @@ from math import sqrt
 import os
 from subprocess import Popen
 from fabric import Connection
+from websockets.sync.client import connect
+
 
 TABLET_IP = "192.168.1.9"
 USER = "pi"
@@ -21,7 +23,7 @@ MAX_LENGTH = 10
 TABLET_WIDTH = 1000
 TABLET_HEIGHT = 600
 
-UNIT_ROD_WIDTH = 40
+UNIT_ROD_WIDTH = 30
 
 USER = "pi"
 PASSWORD = "raspberry"
@@ -164,8 +166,8 @@ class RodSpec:
         return int(sum(self.nb_rods_per_length))
 
     def line_width(self):
-        area = sum([self.nb_rods_per_length[i] * (i + 1) for i in range(NB_REGLETTES)])
-        return sqrt(5 * area / 3) * UNIT_ROD_WIDTH  # 5/3 is the tablet's aspect ratio
+        area = sum([self.nb_rods_per_length[i] * (i + 1) for i in range(NB_REGLETTES)]) * UNIT_ROD_WIDTH**2
+        return min(sqrt(5 * area / 3), TABLET_WIDTH)  # 5/3 is the tablet's aspect ratio
 
     def pad(self, total_rods=20):
         if self.nb_rods() < total_rods:
@@ -193,14 +195,22 @@ class RodSpec:
         rod_lines = [[]]
 
         with open(filename, "w") as f:
+            if line_width > screen_width:
+                print("weird")
             x = 0
             f.write(f"{self.nb_rods()} ")
             for length in rod_lengths:
-                if length + x > line_width:
+                if length*unit_rod_width + x > line_width:
                     pad_x = (screen_width - x) / len(rod_lines[-1])
+                    if pad_x < 0:
+                        if line_width > screen_width:
+                            print("wala!")
+                        else:
+                            print(f"ohoh {x} {line_width} {screen_width} {length}")
+
 
                     for j, rod in enumerate(rod_lines[-1]):
-                        rod[1] += (j + random.uniform(0.2, 0.8)) * pad_x  # pad x
+                        rod[1] += (j + random.uniform(0.,1.)) * pad_x  # pad x
                     x = 0
                     rod_lines.append([])
 
@@ -209,20 +219,24 @@ class RodSpec:
 
             # Pad the last line
             pad_x = (screen_width - x) / len(rod_lines[-1])
+            if pad_x < 0:
+                print("sdfdsf!")
 
             for j, rod in enumerate(rod_lines[-1]):
-                rod[1] += (j + random.uniform(0.2, 0.8)) * pad_x
+                rod[1] += (j + random.uniform(0., 1.)) * pad_x
 
             # Move the last line around
             rand_idx = random.randrange(0, len(rod_lines))
             rod_lines[-1], rod_lines[rand_idx] = rod_lines[rand_idx], rod_lines[-1]
 
             pad_y = (screen_height - (len(rod_lines) * unit_rod_width)) / len(rod_lines)
+            if pad_y < 0:
+                print("ouhla!")
 
             for line_idx, line in enumerate(rod_lines):
                 for [length, x] in line:
                     f.write(
-                        f"{length} {x} {pad_y*(line_idx + random.uniform(0.2,0.8)) + line_idx*unit_rod_width} "
+                        f"{length} {x} {pad_y*(line_idx + random.uniform(0.,1.)) + line_idx*unit_rod_width} "
                     )
 
             f.close()
@@ -306,6 +320,7 @@ class App:
         self.answer_entry.grid(column=1, row=2, sticky=N)
         self.answer_entry.focus()
 
+
         self.display_problem(self.problem)
         self.root.bind("<Return>", self.submit_answer)
 
@@ -354,9 +369,18 @@ class App:
         Label(self.problem_frame, text="?").grid(column=5, row=1, sticky=(S, W))
 
         if self.problem_id == 0:
+            print("HI")
             self.c.run("DISPLAY=:0 cd ~/haptic_rods_C && make update_and_run", asynchronous=True)
+            import time
+            time.sleep(5)
+            self.websocket = connect("ws://192.168.1.9:8080")
+            print("HISJHIDF")
+
         else:
-            send_key(self.c, "N")
+            self.websocket.send("n")
+            message = self.websocket.recv()
+            print(f"Received: {message}")
+
 
 if __name__ == "__main__":
     # os.system(f"scp -r '/home/aflokkat/Bureau/HapticRods/Haptic-Problems-GUI/problem_set' pi@{TABLET_IP}:~/haptic_rods_C/problem_set")
