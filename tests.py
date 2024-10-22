@@ -1,4 +1,4 @@
-from main import *
+from problems import *
 import unittest
 
 class TestFractionMethods(unittest.TestCase):

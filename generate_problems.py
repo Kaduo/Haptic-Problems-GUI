@@ -1,6 +1,6 @@
-from main import Problem
+from problems import Problem
 import os
-from main import TABLET_IP
+from problems import TABLET_IP
 
 def generate_problems(n, prefix="problem_set/problem"):
     for i in range(n):
