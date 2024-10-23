@@ -9,7 +9,7 @@ from fabric import Connection
 from websockets.sync.client import connect
 
 
-TABLET_IP = "192.168.1.9"
+TABLET_IP = "192.168.1.24"
 USER = "pi"
 PASSWORD = "raspberry"
 

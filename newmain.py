@@ -3,7 +3,7 @@ from problems import Problem, Rod, Color, Fraction
 from generate_problems import send_problems
 from websockets.sync.client import connect
 
-NB_PROBLEMS = 20
+NB_PROBLEMS = 4
 
 def colored_label(text_parts, colors):
     # Create HTML code with colored parts
@@ -21,44 +21,59 @@ def get_problem_statement(problem):
 
 class App:
 
-    def __init__(self):
-        self.websocket = connect("ws://192.168.1.9:8080")
-        self.problem_id = 0
-        self.statement = ui.html()
-        self.input = ui.input("Ta réponse : ")
-        self.load_next_problem()
-        ui.add_body_html("""
-        <style>
-            body {
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                height: 100vh;
-                margin: 0;
-            }
-        </style>
-        """)
-        with ui.column().style("align-items: center;"):
-            self.statement
-            self.input
-            ui.button('Valider', on_click=lambda: self.check_answer(self.input.value))
+    def __init__(self, user_id, problem_id):
+        self.websocket = connect("ws://192.168.1.24:8080")
+        self.problem_id = problem_id
+        self.user_id = user_id
+        self.correct = None
+        self.current_problem = None
+        self.answer = None
+        self.waiting = False
+        self.start_current_user()
+        self.load_current_problem()
+        with ui.column():
+            ui.label().bind_text_from(self, "problem_id", backward= lambda id: f"{id+1}/{NB_PROBLEMS}")
+            ui.icon("Done").bind_visibility_from(self, "correct", value=True)
+        # ui.add_body_html("""
+        # <style>
+        #     body {
+        #         display: flex;
+        #         justify-content: center;
+        #         align-items: center;
+        #         height: 100vh;
+        #         margin: 0;
+        #     }
+        # </style>
+        # """)
+        with ui.element("div").style("display: flex; align-items: center; justify-content: center; height: 100vh; width:100%;"):
+            with ui.column().style("align-items: center;"):
+                ui.html().bind_content_from(self, "current_problem", get_problem_statement)
+                ui.input("Ta réponse : ").bind_value(self, "answer")
+                ui.button('Valider', on_click=lambda: self.check_answer())
         ui.run()
+    
+    def start_current_user(self):
+        self.websocket.send(f"{self.user_id}")
 
-
-    def load_next_problem(self):
+    def load_current_problem(self):
         self.current_problem = Problem.load(f"problem_set/problem{self.problem_id}.prob")
-        self.statement.set_content(get_problem_statement(self.current_problem))
-        self.problem_id += 1
-
-    def check_answer(self, answer):
-        if self.current_problem.is_solution(Fraction.from_string(answer)):
-            print("YAY")
-        else:
-            print("NOOO")
-
-        self.load_next_problem()
         self.websocket.send(f"n{self.problem_id}")
+    def check_answer(self):
+        self.correct = self.current_problem.is_solution(Fraction.from_string(self.answer))
+        self.answer = None
+        self.next()
+
+    def next(self):
+        if self.problem_id < NB_PROBLEMS:
+            self.problem_id += 1
+            self.load_current_problem()
+        else:
+            self.problem_id = 0
+            self.user_id += 1
+            self.start_current_user()
+            self.load_current_problem()
 
 
 if __name__ in {"__main__", "__mp_main__"}:
-    app = App()
+    app = App(1,0)
+    print("hi")
