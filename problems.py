@@ -195,19 +195,11 @@ class RodSpec:
         rod_lines = [[]]
 
         with open(filename, "w") as f:
-            if line_width > screen_width:
-                print("weird")
             x = 0
             f.write(f"{self.nb_rods()} ")
             for length in rod_lengths:
                 if length*unit_rod_width + x > line_width:
                     pad_x = (screen_width - x) / len(rod_lines[-1])
-                    if pad_x < 0:
-                        if line_width > screen_width:
-                            print("wala!")
-                        else:
-                            print(f"ohoh {x} {line_width} {screen_width} {length}")
-
 
                     for j, rod in enumerate(rod_lines[-1]):
                         rod[1] += (j + random.uniform(0.,1.)) * pad_x  # pad x
@@ -219,8 +211,6 @@ class RodSpec:
 
             # Pad the last line
             pad_x = (screen_width - x) / len(rod_lines[-1])
-            if pad_x < 0:
-                print("sdfdsf!")
 
             for j, rod in enumerate(rod_lines[-1]):
                 rod[1] += (j + random.uniform(0., 1.)) * pad_x
@@ -230,8 +220,6 @@ class RodSpec:
             rod_lines[-1], rod_lines[rand_idx] = rod_lines[rand_idx], rod_lines[-1]
 
             pad_y = (screen_height - (len(rod_lines) * unit_rod_width)) / len(rod_lines)
-            if pad_y < 0:
-                print("ouhla!")
 
             for line_idx, line in enumerate(rod_lines):
                 for [length, x] in line:
@@ -385,6 +373,7 @@ class App:
 if __name__ == "__main__":
     # os.system(f"scp -r '/home/aflokkat/Bureau/HapticRods/Haptic-Problems-GUI/problem_set' pi@{TABLET_IP}:~/haptic_rods_C/problem_set")
     p = Popen(["python", "gaze/main.py"])
+
 
     app = App()
     app.mainloop()
