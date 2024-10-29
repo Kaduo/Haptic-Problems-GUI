@@ -50,6 +50,7 @@ class App:
         self.statement.set_content(get_problem_statement(self.current_problem))
         self.problem_id += 1
 
+
     def check_answer(self, answer):
         if self.current_problem.is_solution(Fraction.from_string(answer)):
             print("YAY")
@@ -58,6 +59,8 @@ class App:
 
         self.load_next_problem()
         self.websocket.send(f"n{self.problem_id}")
+        self.websocket.recv(timeout=None)
+        print("Next !")
 
 
 if __name__ in {"__main__", "__mp_main__"}:
