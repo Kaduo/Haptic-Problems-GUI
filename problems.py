@@ -1,13 +1,7 @@
 from enum import Enum
 import random
 from math import gcd, lcm
-from tkinter import Tk, Label, StringVar, N, S, W, E, ttk
 from math import sqrt
-import os
-from subprocess import Popen
-from fabric import Connection
-from websockets.sync.client import connect
-
 
 TABLET_IP = "192.168.1.24"
 USER = "pi"
@@ -27,11 +21,6 @@ UNIT_ROD_WIDTH = 30
 
 USER = "pi"
 PASSWORD = "raspberry"
-
-
-def send_key(c, k):
-    c.run(f"DISPLAY=:0 xdotool getactivewindow key {k}")
-
 
 class Color(Enum):
     WHITE = "#c8c8c8"
@@ -275,110 +264,3 @@ class Problem:
             r2 = Rod(int(args[2]))
             f.close()
             return Problem(l1, r1, r2)
-
-
-def make_problems(n):
-    pass
-
-
-class App:
-    def __init__(self):
-
-        self.c = Connection(TABLET_IP, user=USER, connect_kwargs={"password": PASSWORD})
-
-        self.problem_id = 0
-        self.problem = Problem.load(f"problem_set/problem{self.problem_id}.prob")
-        self.root = Tk()
-        #self.root.attributes("-fullscreen", True)
-        self.root.title("Haptic Rods")
-
-        self.mainframe = ttk.Frame(self.root, padding=(3, 3, 12, 12))
-        self.mainframe.grid(column=0, row=0, sticky=(N, W, E, S))
-        self.root.columnconfigure(0, weight=1)
-        self.root.rowconfigure(0, weight=1)
-
-        self.mainframe.columnconfigure(1, weight=1)
-        self.mainframe.rowconfigure(1, weight=1)
-        self.mainframe.rowconfigure(2, weight=1)
-
-        self.problem_frame = ttk.Frame(self.mainframe)
-        self.problem_frame.grid(column=1, row=1, sticky=S)
-        self.answer = StringVar()
-        self.answer_entry = ttk.Entry(self.mainframe, textvariable=self.answer)
-        self.answer_entry.grid(column=1, row=2, sticky=N)
-        self.answer_entry.focus()
-
-
-        self.display_problem(self.problem)
-        self.root.bind("<Return>", self.submit_answer)
-
-    def submit_answer(self, *args):
-        try:
-            value = Fraction.from_string(self.answer.get())
-            if self.problem.is_solution(value):
-                self.root.configure(bg="green")
-            else:
-                self.root.configure(bg="red")
-        except ParsingError:
-            self.root.configure(bg="red")
-        
-        self.problem_id += 1
-        self.problem = Problem.load(f"problem_set/problem{self.problem_id}.prob")
-        self.display_problem(self.problem)
-
-    def mainloop(self):
-        self.root.mainloop()
-
-    def display_problem(self, problem):
-        for widget in self.problem_frame.winfo_children():
-            widget.destroy()
-        # self.answer_entry.delete("1.0", END)
-        Label(self.problem_frame, text="Si la réglette ").grid(
-            column=1, row=1, sticky=S
-        )
-
-        Label(
-            self.problem_frame,
-            text=f"{problem.r1.color} ",
-            foreground=problem.r1.color.value,
-        ).grid(column=2, row=1, sticky=(S, W))
-
-        Label(
-            self.problem_frame,
-            text=f"mesure {problem.l1} cm, quelle est la longueur de la réglette ",
-        ).grid(column=3, row=1, sticky=(S, W))
-
-        Label(
-            self.problem_frame,
-            text=f"{problem.r2.color} ",
-            foreground=problem.r2.color.value,
-        ).grid(column=4, row=1, sticky=(S, W))
-
-        Label(self.problem_frame, text="?").grid(column=5, row=1, sticky=(S, W))
-
-        if self.problem_id == 0:
-            print("HI")
-            self.c.run("DISPLAY=:0 cd ~/haptic_rods_C && make update_and_run", asynchronous=True)
-            import time
-            time.sleep(5)
-            self.websocket = connect("ws://192.168.1.9:8080")
-            print("HISJHIDF")
-
-        else:
-            self.websocket.send("n")
-            message = self.websocket.recv()
-            print(f"Received: {message}")
-
-
-if __name__ == "__main__":
-    # os.system(f"scp -r '/home/aflokkat/Bureau/HapticRods/Haptic-Problems-GUI/problem_set' pi@{TABLET_IP}:~/haptic_rods_C/problem_set")
-    p = Popen(["python", "gaze/main.py"])
-
-
-    app = App()
-    app.mainloop()
-    send_key(app.c, "Escape")
-    # app.c.run("pkill haptic_rods")
-    # print("hello...")
-
-    p.send_signal(SIGINT)

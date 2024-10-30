@@ -78,6 +78,7 @@ import os
 from AngleBuffer import AngleBuffer
 
 
+
 #-----------------------------------------------------------------------------------------------------------------------------------
 #-----------------------------------------------------------------------------------------------------------------------------------
 
@@ -420,6 +421,33 @@ if LOG_ALL_FEATURES:
         + [f"Landmark_{i}_Y" for i in range(468)]
     )
 
+def save_and_close():
+    # Releasing camera and closing windows
+    cap.release()
+    cv.destroyAllWindows()
+    iris_socket.close()
+    if PRINT_DATA:
+        print("Program exited successfully.")
+
+    # Writing data to CSV file
+    if LOG_DATA and IS_RECORDING:
+        if PRINT_DATA:
+            print("Writing data to CSV...")
+        timestamp_str = datetime.now().strftime("%d-%m-%Y_%H-%M-%S")
+        csv_file_name = os.path.join(
+            LOG_FOLDER, f"eye_tracking_log_{timestamp_str}.csv"
+        )
+        with open(csv_file_name, "w", newline="") as file:
+            writer = csv.writer(file)
+            writer.writerow(column_names)  # Writing column names
+            print("HERE")
+            writer.writerows(csv_data)  # Writing data rows
+            print("THERE")
+            file.close()
+        if PRINT_DATA:
+            print(f"Data written to {csv_file_name}")
+
+
 # Main loop for video capture and processing
 try:
     angle_buffer = AngleBuffer(size=MOVING_AVERAGE_WINDOW)  # Adjust size for smoothing
@@ -652,7 +680,7 @@ try:
 
         
         # Displaying the processed frame
-        # cv.imshow("Eye Tracking", frame)
+        cv.imshow("Eye Tracking", frame)
         # Handle key presses
         key = cv.waitKey(1) & 0xFF
 
@@ -677,7 +705,10 @@ try:
             if PRINT_DATA:
                 print("Exiting program...")
             break
-        
+
+
+
+
 except Exception as e:
     print(f"An error occurred: {e}")
 finally:
@@ -699,6 +730,9 @@ finally:
         with open(csv_file_name, "w", newline="") as file:
             writer = csv.writer(file)
             writer.writerow(column_names)  # Writing column names
+            print("HERE")
             writer.writerows(csv_data)  # Writing data rows
+            print("THERE")
+            file.close()
         if PRINT_DATA:
             print(f"Data written to {csv_file_name}")
