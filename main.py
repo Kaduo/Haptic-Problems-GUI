@@ -11,6 +11,7 @@ import signal
 import glob
 import pathlib
 import tomlkit
+import shutil
 
 NB_PROBLEMS = 10
 
@@ -29,10 +30,21 @@ def get_problem_statement(problem):
     colors = ["black", problem.r1.color.value, "black", problem.r2.color.value, "black"]
     return colored_label(text_parts, colors)
 
+def launch_tablet_app(ip):
+    Popen(["ssh", f"pi@{TABLET_IP}", "cd haptic_rods_C; make update_and_run"])
+
+def close_tablet_app(ip):
+    Popen(["ssh", f"pi@{TABLET_IP}", "killall haptic_rods"])
+
 class App:
 
     def __init__(self, user_id, problem_id):
-        self.websocket = connect(f"ws://{TABLET_IP}:8080")
+        try:
+            self.websocket = connect(f"ws://{TABLET_IP}:8080")
+        except ConnectionError:
+            launch_tablet_app(TABLET_IP)
+            time.sleep(2.)
+            self.websocket = connect(f"ws://{TABLET_IP}:8080")
         self.problem_id = problem_id
         self.p = Popen(["python", "gaze/main.py"])
         self.user_id = user_id
@@ -62,6 +74,9 @@ class App:
         self.websocket.send(f"n{self.problem_id}")
         print("waiting for answer...")
         self.websocket.recv(timeout=None)
+    
+    def user_folder(self):
+        return f"user_data/user{self.user_id}/"
 
     def check_answer(self):
         if self.answer is not None:
@@ -71,6 +86,9 @@ class App:
                 self.correct = False
                 return
 
+            with open(f"user_data/user{self.user_id}/answer_u{self.user_id}p{self.problem_id}", "w") as f:
+                f.write(f"{self.answer} {self.correct}")
+            
             if self.correct:
                 self.ok_image_path = "images/okay.jpg"
             else:
@@ -87,8 +105,9 @@ class App:
         self.grab_taps()
         self.p.wait()
         self.slice_eyes()
+        for i in range(NB_PROBLEMS):
+            shutil.copy(f"problem_set/problem{i}.prob", f"user_data/user{self.user_id}")
         
-
     def next(self):
         if self.problem_id < NB_PROBLEMS - 1:
             self.problem_id += 1
@@ -115,10 +134,13 @@ class App:
         # pathlib.Path.unlink(latest_log_name)
 
 if __name__ in {"__main__", "__mp_main__"}:
-    with open("meta.toml", "r+") as meta:
-        doc = tomlkit.load(meta)
-        meta.seek(0)
-        doc["latest_user_id"] += 1
-        tomlkit.dump(doc, meta)
-        app = App(doc["latest_user_id"],0)
-    print("hi")
+    try:
+        with open("meta.toml", "r+") as meta:
+            doc = tomlkit.load(meta)
+            meta.seek(0)
+            doc["latest_user_id"] += 1
+            tomlkit.dump(doc, meta)
+            app = App(doc["latest_user_id"],0)
+    except KeyboardInterrupt:
+        close_tablet_app(TABLET_IP)
+

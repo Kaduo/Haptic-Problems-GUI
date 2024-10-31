@@ -228,19 +228,24 @@ class Problem:
 
         lcm_r1_r2 = lcm(r1.length, r2.length)
         gcd_r1_r2 = gcd(r1.length, r2.length)
-        self.necessary_rods = RodSpec(
-            d={
-                r1.length: lcm_r1_r2 // r1.length,
-                r2.length: lcm_r1_r2 // r2.length,
-                gcd_r1_r2: r2.length // gcd_r1_r2,
-            }
-        )
+
+        d = {
+            r1.length: lcm_r1_r2 // r1.length,
+            r2.length: lcm_r1_r2 // r2.length,
+        }
+        if r1.length != 1 and r2.length != 1:
+            d[gcd_r1_r2] = r2.length // gcd_r1_r2,
+
+        self.necessary_rods = RodSpec(d)
 
         self.necessary_rods.pad(padding)
 
     def random(padding= 20):
-        # TODO : prevent second random rod to be the same as the first one
-        return Problem(random.randrange(1, 11), random_rod(min_length=2), random_rod(), padding=padding)
+        rand_rod1 = random_rod()
+        rand_rod2 = random_rod()
+        while rand_rod1.length == rand_rod2.length:
+            rand_rod2 = random_rod
+        return Problem(random.randrange(1, 11), rand_rod1, rand_rod2, padding=padding)
 
     def __str__(self):
         return f"Si la réglette {self.r1.color} mesure {self.l1} cm, combien mesure la réglette {self.r2.color} ?"
