@@ -22,6 +22,7 @@ UNIT_ROD_WIDTH = 30
 USER = "pi"
 PASSWORD = "raspberry"
 
+
 class Color(Enum):
     WHITE = "#c8c8c8"
     RED = "#e62937"
@@ -141,10 +142,9 @@ class RodSpec:
         # rods of length l.
         # If both are set, the numbers are added together.
         if nb_rods_per_length is None:
-            self.nb_rods_per_length = [0]*10
+            self.nb_rods_per_length = [0] * 10
         else:
             self.nb_rods_per_length = nb_rods_per_length
-        print("hihihi", self.nb_rods_per_length)
         for length in range(MIN_LENGTH, MAX_LENGTH + 1):
             if length in d.keys():
                 self.nb_rods_per_length[length - 1] = d[length]
@@ -159,7 +159,10 @@ class RodSpec:
         return int(sum(self.nb_rods_per_length))
 
     def line_width(self):
-        area = sum([self.nb_rods_per_length[i] * (i + 1) for i in range(NB_REGLETTES)]) * UNIT_ROD_WIDTH**2
+        area = (
+            sum([self.nb_rods_per_length[i] * (i + 1) for i in range(NB_REGLETTES)])
+            * UNIT_ROD_WIDTH**2
+        )
         return min(sqrt(5 * area / 3), TABLET_WIDTH)  # 5/3 is the tablet's aspect ratio
 
     def pad(self, total_rods=20):
@@ -191,11 +194,11 @@ class RodSpec:
             x = 0
             f.write(f"{self.nb_rods()} ")
             for length in rod_lengths:
-                if length*unit_rod_width + x > line_width:
+                if length * unit_rod_width + x > line_width:
                     pad_x = (screen_width - x) / len(rod_lines[-1])
 
                     for j, rod in enumerate(rod_lines[-1]):
-                        rod[1] += (j + random.uniform(0.,1.)) * pad_x  # pad x
+                        rod[1] += (j + random.uniform(0.0, 1.0)) * pad_x  # pad x
                     x = 0
                     rod_lines.append([])
 
@@ -206,7 +209,7 @@ class RodSpec:
             pad_x = (screen_width - x) / len(rod_lines[-1])
 
             for j, rod in enumerate(rod_lines[-1]):
-                rod[1] += (j + random.uniform(0., 1.)) * pad_x
+                rod[1] += (j + random.uniform(0.0, 1.0)) * pad_x
 
             # Move the last line around
             rand_idx = random.randrange(0, len(rod_lines))
@@ -223,10 +226,18 @@ class RodSpec:
             f.close()
 
 
-
-
 class Problem:
-    def __init__(self, l1, r1, r2, padding=20):
+    def __init__(
+        self,
+        l1,
+        r1,
+        r2,
+        padding=20,
+        lcm_method=True,
+        gcd_method=True,
+        force_lcm_method=False,
+        lcm_bound=(TABLET_WIDTH / UNIT_ROD_WIDTH) * 0.8,
+    ):
         self.l1 = l1
         self.r1 = r1
         self.r2 = r2
@@ -235,13 +246,16 @@ class Problem:
         lcm_r1_r2 = lcm(r1.length, r2.length)
         gcd_r1_r2 = gcd(r1.length, r2.length)
 
-        self.d = {
-            r1.length: lcm_r1_r2 // r1.length,
-            r2.length: lcm_r1_r2 // r2.length
-        }
-        if r1.length != 1 and r2.length != 1:
-            self.d[gcd_r1_r2] = r2.length // gcd_r1_r2
-        
+        self.d = {}
+
+        use_lcm_method = force_lcm_method or (lcm_method and lcm_r1_r2 < lcm_bound)
+        if use_lcm_method:
+            self.d[r1.length] = lcm_r1_r2 // r1.length
+            self.d[r2.length] = lcm_r1_r2 // r2.length
+
+        if gcd_method and (not use_lcm_method or (r1.length != 1 and r2.length != 1)):
+            self.d[gcd_r1_r2] = max(r1.length, r2.length) // gcd_r1_r2
+
         self.necessary_rods = RodSpec(d=self.d)
         self.necessary_rods.pad(padding)
 
@@ -267,6 +281,7 @@ class Problem:
             r2 = Rod(int(args[2]))
             f.close()
             return Problem(l1, r1, r2)
+
 
 def random_problem(padding=20):
     rand_rod1 = random_rod()
