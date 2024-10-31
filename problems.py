@@ -134,13 +134,17 @@ def random_rod(min_length=MIN_LENGTH, max_length=MAX_LENGTH):
 
 
 class RodSpec:
-    def __init__(self, nb_rods_per_length=[0] * 10, d={}):
+    def __init__(self, nb_rods_per_length=None, d={}):
         # nb_rods_per_length is a list where the n-th element is the
         # number of rods of length n+1.
         # d is a dictionary where the element at key l is the number of
         # rods of length l.
         # If both are set, the numbers are added together.
-        self.nb_rods_per_length = nb_rods_per_length
+        if nb_rods_per_length is None:
+            self.nb_rods_per_length = [0]*10
+        else:
+            self.nb_rods_per_length = nb_rods_per_length
+        print("hihihi", self.nb_rods_per_length)
         for length in range(MIN_LENGTH, MAX_LENGTH + 1):
             if length in d.keys():
                 self.nb_rods_per_length[length - 1] = d[length]
@@ -219,6 +223,8 @@ class RodSpec:
             f.close()
 
 
+
+
 class Problem:
     def __init__(self, l1, r1, r2, padding=20):
         self.l1 = l1
@@ -229,23 +235,15 @@ class Problem:
         lcm_r1_r2 = lcm(r1.length, r2.length)
         gcd_r1_r2 = gcd(r1.length, r2.length)
 
-        d = {
+        self.d = {
             r1.length: lcm_r1_r2 // r1.length,
-            r2.length: lcm_r1_r2 // r2.length,
+            r2.length: lcm_r1_r2 // r2.length
         }
         if r1.length != 1 and r2.length != 1:
-            d[gcd_r1_r2] = r2.length // gcd_r1_r2,
-
-        self.necessary_rods = RodSpec(d)
-
+            self.d[gcd_r1_r2] = r2.length // gcd_r1_r2
+        
+        self.necessary_rods = RodSpec(d=self.d)
         self.necessary_rods.pad(padding)
-
-    def random(padding= 20):
-        rand_rod1 = random_rod()
-        rand_rod2 = random_rod()
-        while rand_rod1.length == rand_rod2.length:
-            rand_rod2 = random_rod
-        return Problem(random.randrange(1, 11), rand_rod1, rand_rod2, padding=padding)
 
     def __str__(self):
         return f"Si la réglette {self.r1.color} mesure {self.l1} cm, combien mesure la réglette {self.r2.color} ?"
@@ -269,3 +267,10 @@ class Problem:
             r2 = Rod(int(args[2]))
             f.close()
             return Problem(l1, r1, r2)
+
+def random_problem(padding=20):
+    rand_rod1 = random_rod()
+    rand_rod2 = random_rod()
+    while rand_rod1.length == rand_rod2.length:
+        rand_rod2 = random_rod()
+    return Problem(random.randrange(1, 11), rand_rod1, rand_rod2, padding=padding)
