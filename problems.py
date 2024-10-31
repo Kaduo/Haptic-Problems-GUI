@@ -236,6 +236,7 @@ class Problem:
         lcm_method=True,
         gcd_method=True,
         force_lcm_method=False,
+        spicy_gcd=False,
         lcm_bound=(TABLET_WIDTH / UNIT_ROD_WIDTH) * 0.8,
     ):
         self.l1 = l1
@@ -254,7 +255,12 @@ class Problem:
             self.d[r2.length] = lcm_r1_r2 // r2.length
 
         if gcd_method and (not use_lcm_method or (r1.length != 1 and r2.length != 1)):
-            self.d[gcd_r1_r2] = max(r1.length, r2.length) // gcd_r1_r2
+            if not spicy_gcd:
+                self.d[gcd_r1_r2] = max(r1.length, r2.length) // gcd_r1_r2
+            else:
+                #TODO : add spicy gcd : plutôt que d'ajouter un paquet de réglette de longueur gcd, ajouter des réglettes de longueurs multiples du gcd,
+                # voire d'autres possibilités...
+                pass
 
         self.necessary_rods = RodSpec(d=self.d)
         self.necessary_rods.pad(padding)
