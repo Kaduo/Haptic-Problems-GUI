@@ -225,6 +225,9 @@ class RodSpec:
 
             f.close()
 
+def ensure_at_least(d, rod_length, n):
+    if rod_length not in d.keys() or d[rod_length] < n:
+        d[rod_length] = n
 
 class Problem:
     def __init__(
@@ -249,17 +252,21 @@ class Problem:
 
         self.d = {}
 
+        ensure_at_least(self.d, r1.length, 1)
+        ensure_at_least(self.d, r2.length, 1)
         use_lcm_method = force_lcm_method or (lcm_method and lcm_r1_r2 < lcm_bound)
         if use_lcm_method:
-            self.d[r1.length] = lcm_r1_r2 // r1.length
-            self.d[r2.length] = lcm_r1_r2 // r2.length
+            ensure_at_least(self.d, r1.length, lcm_r1_r2 // r1.length)
+            ensure_at_least(self.d, r2.length, lcm_r1_r2 // r2.length)
 
-        if gcd_method and (not use_lcm_method or (r1.length != 1 and r2.length != 1)):
+        if gcd_method:
             if not spicy_gcd:
-                self.d[gcd_r1_r2] = max(r1.length, r2.length) // gcd_r1_r2
+                ensure_at_least(self.d, gcd_r1_r2, max(r1.length, r2.length) // gcd_r1_r2)
+                ensure_at_least(self.d, min(r1.length, r2.length), max(r1.length, r2.length)//min(r1.length, r2.length))
+
             else:
                 #TODO : add spicy gcd : plutôt que d'ajouter un paquet de réglette de longueur gcd, ajouter des réglettes de longueurs multiples du gcd,
-                # voire d'autres possibilités...
+                # voire d'autres possibilités... Algo d'Euclide généralisé
                 pass
 
         self.necessary_rods = RodSpec(d=self.d)
