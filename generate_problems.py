@@ -11,5 +11,5 @@ def send_problems():
     os.system(f"scp -r 'problem_set' pi@{TABLET_IP}:~/haptic_rods_C/")
 
 if __name__ == "__main__":
-    generate_problems(30)
+    generate_problems(10)
     send_problems()

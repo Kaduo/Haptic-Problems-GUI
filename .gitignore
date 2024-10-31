@@ -4,3 +4,4 @@ gaze/__pycache__/AngleBuffer.cpython-312.pyc
 *.csv
 *.prob
 *.rods
+user_data/*
